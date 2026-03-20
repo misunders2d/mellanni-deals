@@ -65,6 +65,10 @@ export default function AdminDashboard() {
     } else {
       setEditingPromo(null);
       setFormData({
+        productName: '',
+        amazonLink: '',
+        imageUrl: '',
+        promoCode: '',
         promoType: 'Promo Code' as PromoType,
         discountPercent: 10,
         startDate: format(new Date(), 'yyyy-MM-dd'),
@@ -80,16 +84,18 @@ export default function AdminDashboard() {
       const dbPayload = mapToDB(formData);
       
       if (editingPromo && editingPromo.id) {
-        await supabase.from('promotions').update(dbPayload).eq('id', editingPromo.id);
+        const { error } = await supabase.from('promotions').update(dbPayload).eq('id', editingPromo.id);
+        if (error) throw error;
       } else {
-        await supabase.from('promotions').insert([dbPayload]);
+        const { error } = await supabase.from('promotions').insert([dbPayload]);
+        if (error) throw error;
       }
       
       await fetchPromotions();
       setIsModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save", error);
-      alert("Error saving promotion!");
+      alert(`Database Error: ${error.message || 'Constraint violation. Check that Product Name, Link, and Image are filled.'}`);
     }
   };
 
