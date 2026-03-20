@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                     type="text" 
                     value={formData.promoCode || ''}
                     onChange={e => setFormData({...formData, promoCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none font-mono"
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none tracking-widest"
                     placeholder="e.g. SAVE20NOW"
                   />
                 </div>

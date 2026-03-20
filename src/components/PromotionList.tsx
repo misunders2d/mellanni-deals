@@ -104,7 +104,7 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
               {promo.promoCode && (
                 <div className="mb-4 inline-flex items-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded px-3 py-1.5 w-max">
                   <span className="text-xs text-slate-500 font-medium">CODE:</span>
-                  <span className="font-mono text-sm font-bold text-primary">{promo.promoCode}</span>
+                  <span className="text-sm font-bold text-primary">{promo.promoCode}</span>
                 </div>
               )}
               

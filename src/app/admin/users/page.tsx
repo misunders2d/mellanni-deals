@@ -107,7 +107,7 @@ export default function UserManagementDashboard() {
                   <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-primary">{profile.email}</td>
                     <td className="px-6 py-4">{(profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}` : 'No Name Set'}</td>
-                    <td className="px-6 py-4 text-xs font-mono text-muted-foreground break-all max-w-[150px] truncate">{profile.id}</td>
+                    <td className="px-6 py-4 text-xs text-muted-foreground break-all max-w-[150px] truncate">{profile.id}</td>
                     <td className="px-6 py-4">
                       <select 
                         className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary"

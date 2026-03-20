@@ -68,11 +68,11 @@ export default function SettingsPage() {
             <div className="space-y-4 text-sm bg-slate-50 p-4 rounded-lg border border-border">
               <div className="flex justify-between">
                 <span className="text-slate-500">Email Reference</span>
-                <span className="font-mono font-medium">{user?.email || 'Loading...'}</span>
+                <span className="font-medium tracking-wide">{user?.email || 'Loading...'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Unique Identifier</span>
-                <span className="font-mono text-xs">{user?.id || 'Loading...'}</span>
+                <span className="text-xs tracking-wider">{user?.id || 'Loading...'}</span>
               </div>
             </div>
           </section>
