@@ -22,9 +22,9 @@
   --border: #e5e7eb;
 }
 
-@theme inline {
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-outfit), ui-serif, Georgia, serif;
   
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -48,6 +48,8 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    @apply font-sans antialiased;
+    @apply antialiased;
   }
 }
+
+
