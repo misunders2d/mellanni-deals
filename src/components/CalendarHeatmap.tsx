@@ -104,7 +104,7 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
                 onClick={() => onDateSelect?.(day)}
                 className={`
                   relative h-14 md:h-20 rounded-lg flex flex-col items-center justify-center
-                  border transition-all group outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                  border transition-all group outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 hover:z-50
                   ${isCurrentMonth ? '' : 'opacity-40'}
                   ${colorClass === 'bg-transparent' ? 'border-transparent text-foreground hover:bg-slate-50' : colorClass + ' hover:brightness-110'}
                   ${isToday(day) && !isSelected ? 'ring-2 ring-primary/50 ring-offset-2' : ''}
