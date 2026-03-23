@@ -18,6 +18,7 @@ import {
 } from 'date-fns';
 import { Promotion } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatPT, hasTimePT } from '@/utils/date-utils';
 
 interface CalendarHeatmapProps {
   promotions: Promotion[];
@@ -43,17 +44,11 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
 
   const getPromosForDay = (date: Date) => {
     return promotions.filter(p => {
-      const pStart = parseISO(p.startDate);
-      const pEnd = parseISO(p.endDate);
+      const pStartStr = formatPT(p.startDate, 'yyyy-MM-dd');
+      const pEndStr = formatPT(p.endDate, 'yyyy-MM-dd');
+      const dayStr = format(date, 'yyyy-MM-dd');
       
-      const dateCopy = new Date(date);
-      dateCopy.setHours(0, 0, 0, 0);
-      const startCopy = new Date(pStart);
-      startCopy.setHours(0, 0, 0, 0);
-      const endCopy = new Date(pEnd);
-      endCopy.setHours(23, 59, 59, 999);
-      
-      return isWithinInterval(dateCopy, { start: startCopy, end: endCopy });
+      return dayStr >= pStartStr && dayStr <= pEndStr;
     });
   };
 
@@ -129,12 +124,22 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
 
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-900 text-white text-xs rounded-md shadow-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                   <div className="font-semibold mb-1">{format(day, 'MMM d, yyyy')}</div>
-                  {dayPromos.length > 0 ? dayPromos.map(p => (
-                    <div key={p.id} className="flex justify-between items-start mb-1 leading-tight">
-                      <span className="truncate pr-2">{p.productName}</span>
-                      <span className="text-emerald-300 shrink-0 font-medium">{p.discountPercent}% OFF</span>
-                    </div>
-                  )) : (
+                  {dayPromos.length > 0 ? dayPromos.map(p => {
+                    const hasTime = hasTimePT(p.startDate);
+                    return (
+                      <div key={p.id} className="flex flex-col mb-1 border-b border-gray-800 last:border-0 pb-1">
+                        <div className="flex justify-between items-start leading-tight">
+                          <span className="truncate pr-2">{p.productName}</span>
+                          <span className="text-emerald-300 shrink-0 font-medium">{p.discountPercent}% OFF</span>
+                        </div>
+                        {hasTime && (
+                          <div className="text-[10px] text-gray-400 mt-0.5">
+                            Starts: {formatPT(p.startDate, 'h:mm a')} PT
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }) : (
                     <div className="text-gray-400">No promotions</div>
                   )}
                   <div className="text-[10px] text-gray-300 mt-2 border-t border-gray-700 pt-1 text-center">

@@ -5,6 +5,7 @@ import { Promotion, PromoType } from '@/types';
 import { Plus, Edit2, Trash2, X, Save, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { createClient } from '@/utils/supabase/client';
+import { formatPT, hasTimePT, toPTISO } from '@/utils/date-utils';
 
 export default function AdminDashboard() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -61,7 +62,11 @@ export default function AdminDashboard() {
   const handleOpenModal = (promo?: Promotion) => {
     if (promo) {
       setEditingPromo(promo);
-      setFormData(promo);
+      setFormData({
+        ...promo,
+        startDate: formatPT(promo.startDate, "yyyy-MM-dd'T'HH:mm"),
+        endDate: formatPT(promo.endDate, "yyyy-MM-dd'T'HH:mm"),
+      });
     } else {
       setEditingPromo(null);
       setFormData({
@@ -71,8 +76,8 @@ export default function AdminDashboard() {
         promoCode: '',
         promoType: 'Promo Code' as PromoType,
         discountPercent: 10,
-        startDate: format(new Date(), 'yyyy-MM-dd'),
-        endDate: format(new Date(Date.now() + 86400000 * 7), 'yyyy-MM-dd'),
+        startDate: formatPT(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        endDate: formatPT(new Date(Date.now() + 86400000 * 7), "yyyy-MM-dd'T'HH:mm"),
         isActive: true,
       });
     }
@@ -81,7 +86,11 @@ export default function AdminDashboard() {
 
   const handleSave = async () => {
     try {
-      const dbPayload = mapToDB(formData);
+      const dbPayload = mapToDB({
+        ...formData,
+        startDate: formData.startDate ? toPTISO(formData.startDate) : formData.startDate,
+        endDate: formData.endDate ? toPTISO(formData.endDate) : formData.endDate,
+      });
       
       if (editingPromo && editingPromo.id) {
         const { error } = await supabase.from('promotions').update(dbPayload).eq('id', editingPromo.id);
@@ -170,8 +179,9 @@ export default function AdminDashboard() {
                       {promo.discountPercent}%
                     </td>
                     <td className="px-6 py-4 text-muted-foreground text-xs">
-                      {format(parseISO(promo.startDate), 'MMM d, yyyy')} - <br/>
-                      {format(parseISO(promo.endDate), 'MMM d, yyyy')}
+                      {formatPT(promo.startDate, 'MMM d, yyyy' + (hasTimePT(promo.startDate) ? ' h:mm a' : ''))} - <br/>
+                      {formatPT(promo.endDate, 'MMM d, yyyy' + (hasTimePT(promo.endDate) ? ' h:mm a' : ''))}
+                      {(hasTimePT(promo.startDate) || hasTimePT(promo.endDate)) && ' PT'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
@@ -276,9 +286,9 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-foreground">Start Date</label>
+                  <label className="text-sm font-semibold text-foreground">Start Date (Pacific Time)</label>
                   <input 
-                    type="date" 
+                    type="datetime-local" 
                     value={formData.startDate || ''}
                     onChange={e => setFormData({...formData, startDate: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none"
@@ -286,9 +296,9 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-foreground">End Date</label>
+                  <label className="text-sm font-semibold text-foreground">End Date (Pacific Time)</label>
                   <input 
-                    type="date" 
+                    type="datetime-local" 
                     value={formData.endDate || ''}
                     onChange={e => setFormData({...formData, endDate: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none"

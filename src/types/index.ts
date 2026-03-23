@@ -6,8 +6,8 @@ export interface Promotion {
   amazonLink: string;
   promoCode: string | null;
   discountPercent: number;
-  startDate: string; // ISO string YYYY-MM-DD
-  endDate: string; // ISO string YYYY-MM-DD
+  startDate: string; // ISO string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)
+  endDate: string; // ISO string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)
   promoType: PromoType;
   imageUrl: string;
   isActive: boolean;

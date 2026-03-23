@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import { Promotion } from '@/types';
 import CalendarHeatmap from './CalendarHeatmap';
 import PromotionList from './PromotionList';
-import { isWithinInterval, parseISO } from 'date-fns';
+import { formatPT } from '@/utils/date-utils';
+import { format } from 'date-fns';
 
 export default function PromotionsPortal({ initialPromotions }: { initialPromotions: Promotion[] }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -26,19 +27,11 @@ export default function PromotionsPortal({ initialPromotions }: { initialPromoti
   // Filter promotions by the selected calendar date
   const filteredPromotions = selectedDate 
     ? initialPromotions.filter(p => {
-        const pStart = parseISO(p.startDate);
-        const pEnd = parseISO(p.endDate);
+        const pStartStr = formatPT(p.startDate, 'yyyy-MM-dd');
+        const pEndStr = formatPT(p.endDate, 'yyyy-MM-dd');
+        const selectedStr = format(selectedDate, 'yyyy-MM-dd');
         
-        const dateCopy = new Date(selectedDate);
-        dateCopy.setHours(0, 0, 0, 0);
-        
-        const startCopy = new Date(pStart);
-        startCopy.setHours(0, 0, 0, 0);
-        
-        const endCopy = new Date(pEnd);
-        endCopy.setHours(23, 59, 59, 999);
-        
-        return isWithinInterval(dateCopy, { start: startCopy, end: endCopy });
+        return selectedStr >= pStartStr && selectedStr <= pEndStr;
       })
     : initialPromotions;
 

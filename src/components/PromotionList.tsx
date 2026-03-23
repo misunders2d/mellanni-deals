@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Promotion, PromoType } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { Copy, Check, X } from 'lucide-react';
+import { formatPT, hasTimePT } from '@/utils/date-utils';
 
 interface PromotionListProps {
   promotions: Promotion[];
@@ -21,6 +22,11 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
       if (promo.promoCode) {
         copyText += `Use Code: ${promo.promoCode}\n`;
       }
+      
+      if (hasTimePT(promo.startDate)) {
+        copyText += `Starts: ${formatPT(promo.startDate, 'MMM d, h:mm a')} PT\n`;
+      }
+      
       copyText += `Link: ${promo.amazonLink}`;
 
       await navigator.clipboard.writeText(copyText);
@@ -77,11 +83,17 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
         {filteredPromos.map(promo => (
           <div key={promo.id} className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group">
             <div className="aspect-[4/3] w-full bg-slate-100 flex items-center justify-center p-6 relative overflow-hidden">
-              <img 
-                src={promo.imageUrl} 
-                alt={promo.productName} 
-                className="object-cover w-full h-full mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-500" 
-              />
+              {promo.imageUrl ? (
+                <img 
+                  src={promo.imageUrl} 
+                  alt={promo.productName} 
+                  className="object-cover w-full h-full mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-500" 
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 font-serif italic">
+                  Mellanni
+                </div>
+              )}
               <div className="absolute top-4 right-4 bg-emerald-500 text-white font-bold px-3 py-1 rounded-full shadow-sm text-sm">
                 {promo.discountPercent}% OFF
               </div>
@@ -93,7 +105,12 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
                   {promo.promoType}
                 </span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  {format(parseISO(promo.startDate), 'MMM d')} - {format(parseISO(promo.endDate), 'MMM d, yyyy')}
+                  {formatPT(promo.startDate, 'MMM d')}
+                  {hasTimePT(promo.startDate) && ` ${formatPT(promo.startDate, 'h:mm a')}`}
+                  {' - '}
+                  {formatPT(promo.endDate, 'MMM d, yyyy')}
+                  {hasTimePT(promo.endDate) && ` ${formatPT(promo.endDate, 'h:mm a')}`}
+                  {(hasTimePT(promo.startDate) || hasTimePT(promo.endDate)) && ' PT'}
                 </span>
               </div>
               
