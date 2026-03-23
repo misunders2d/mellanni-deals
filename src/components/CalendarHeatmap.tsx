@@ -122,19 +122,30 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
                   </div>
                 )}
 
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-900 text-white text-xs rounded-md shadow-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-gray-900 text-white text-xs rounded-md shadow-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                   <div className="font-semibold mb-1">{format(day, 'MMM d, yyyy')}</div>
                   {dayPromos.length > 0 ? dayPromos.map(p => {
                     const hasTime = hasTimePT(p.startDate);
+                    const pStartDayStr = formatPT(p.startDate, 'yyyy-MM-dd');
+                    const currentDayStr = format(day, 'yyyy-MM-dd');
+                    const isSameDay = pStartDayStr === currentDayStr;
+                    const startedEarlier = pStartDayStr < currentDayStr;
+
                     return (
-                      <div key={p.id} className="flex flex-col mb-1 border-b border-gray-800 last:border-0 pb-1">
+                      <div key={p.id} className="flex flex-col mb-2 border-b border-gray-800 last:border-0 pb-1.5 last:pb-0">
                         <div className="flex justify-between items-start leading-tight">
-                          <span className="truncate pr-2">{p.productName}</span>
-                          <span className="text-emerald-300 shrink-0 font-medium">{p.discountPercent}% OFF</span>
+                          <span className="truncate pr-2 font-medium">{p.productName}</span>
+                          <span className="text-emerald-300 shrink-0 font-bold">{p.discountPercent}% OFF</span>
                         </div>
                         {hasTime && (
                           <div className="text-[10px] text-gray-400 mt-0.5">
-                            Starts: {formatPT(p.startDate, 'h:mm a')} PT
+                            <span className="font-medium text-gray-300">
+                              {isSameDay ? 'Starts: ' : 'Started: '}
+                            </span>
+                            {startedEarlier && (
+                              <span className="text-gray-300">{formatPT(p.startDate, 'MMM d')}, </span>
+                            )}
+                            {formatPT(p.startDate, 'h:mm a')} PT
                           </div>
                         )}
                       </div>
@@ -142,7 +153,7 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
                   }) : (
                     <div className="text-gray-400">No promotions</div>
                   )}
-                  <div className="text-[10px] text-gray-300 mt-2 border-t border-gray-700 pt-1 text-center">
+                  <div className="text-[10px] text-gray-300 mt-2 border-t border-gray-700 pt-2 text-center">
                     Click anywhere on this day to filter
                   </div>
                 </div>
