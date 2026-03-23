@@ -40,7 +40,11 @@ export async function updateSession(request: NextRequest) {
 
   // Protected Routes Check
   // We want to force auth on '/' and '/admin' for the portal.
-  const isAuthRoute = url.pathname.startsWith('/login') || url.pathname.startsWith('/auth')
+  const isAuthRoute = 
+    url.pathname.startsWith('/login') || 
+    url.pathname.startsWith('/auth') || 
+    url.pathname.startsWith('/forgot-password') || 
+    url.pathname.startsWith('/reset-password')
   
   if (!user && !isAuthRoute) {
     url.pathname = '/login'
