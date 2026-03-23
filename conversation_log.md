@@ -72,6 +72,14 @@ Overview of the build process, architectural decisions, and debugging history be
 - **Improved UX**: Tooltips now accurately show "Started: [Date], [Time] PT" for ongoing deals, providing clear context within the calendar view.
 - **Git**: Successfully pushed the fix to the `main` branch.
 
+## 10. Click-to-Copy Promo Codes
+- **Goal**: Allow influencers to copy specific promo codes with a single click, providing immediate feedback.
+- **Implementation**:
+  - Updated `src/components/PromotionList.tsx` to make the promo code display box interactive.
+  - Added a "Copied!" feedback tooltip that appears directly above the code upon successful copy.
+  - Improved UX with hover states and a "Click to copy code" tooltip.
+- **Git**: Committed and pushed the changes to the `main` branch.
+
 ## TODO
 - [ ] **Deal Archiving**: Implement a system to archive past deals so they don't clutter the main interface.
   - Archived deals should remain accessible in a dedicated "Archive" section.
