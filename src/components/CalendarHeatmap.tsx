@@ -55,10 +55,10 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
   const getHeatmapColor = (promos: Promotion[]) => {
     if (promos.length === 0) return 'bg-transparent';
     const totalDiscount = promos.reduce((sum, p) => sum + p.discountPercent, 0);
-    if (totalDiscount <= 15) return 'bg-emerald-100 border-emerald-200 text-emerald-900';
-    if (totalDiscount <= 30) return 'bg-emerald-300 border-emerald-400 text-emerald-900';
-    if (totalDiscount <= 50) return 'bg-emerald-500 border-emerald-600 text-white shadow-sm';
-    return 'bg-emerald-700 border-emerald-800 text-white shadow-md font-semibold';
+    if (totalDiscount <= 15) return 'bg-discount-15 border-discount-30 text-primary';
+    if (totalDiscount <= 30) return 'bg-discount-30 border-discount-50 text-white';
+    if (totalDiscount <= 50) return 'bg-discount-50 border-discount-50-plus text-white shadow-sm';
+    return 'bg-discount-50-plus border-discount-50-plus text-white shadow-md font-semibold';
   };
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -165,10 +165,10 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
       
       <div className="px-6 py-4 bg-slate-50/50 border-t border-border flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-transparent border border-border"></div>None</span>
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-100 border border-emerald-200"></div>~15% OFF</span>
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-300 border border-emerald-400"></div>~30% OFF</span>
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500 border border-emerald-600"></div>~50% OFF</span>
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-700 border border-emerald-800"></div>50%+ OFF</span>
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-15 border border-discount-30"></div>~15% OFF</span>
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-30 border border-discount-50"></div>~30% OFF</span>
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-50 border border-discount-50-plus"></div>~50% OFF</span>
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-50-plus border border-discount-50-plus"></div>50%+ OFF</span>
       </div>
     </div>
   );

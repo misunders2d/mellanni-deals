@@ -20,6 +20,11 @@
   --muted-foreground: #6b7280;
   
   --border: #e5e7eb;
+
+  --discount-15: #FFD0D8;
+  --discount-30: #C5637D;
+  --discount-50: #B23F5F;
+  --discount-50-plus: #8A041E;
 }
 
 @theme {
@@ -39,6 +44,11 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  
+  --color-discount-15: var(--discount-15);
+  --color-discount-30: var(--discount-30);
+  --color-discount-50: var(--discount-50);
+  --color-discount-50-plus: var(--discount-50-plus);
 }
 
 @layer base {

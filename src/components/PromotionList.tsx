@@ -55,6 +55,13 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
     ? promotions 
     : promotions.filter(p => p.promoType === activeFilter);
 
+  const getDiscountColor = (percent: number) => {
+    if (percent <= 15) return 'bg-discount-15 text-primary border border-discount-30';
+    if (percent <= 30) return 'bg-discount-30 text-white';
+    if (percent <= 50) return 'bg-discount-50 text-white';
+    return 'bg-discount-50-plus text-white';
+  };
+
   const filters: (PromoType | 'All')[] = ['All', 'Lightning Deal', 'Best Deal', 'Promo Code', 'Prime Exclusive', 'Sale'];
 
   return (
@@ -106,7 +113,7 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
                   Mellanni
                 </div>
               )}
-              <div className="absolute top-4 right-4 bg-emerald-500 text-white font-bold px-3 py-1 rounded-full shadow-sm text-sm">
+              <div className={`absolute top-4 right-4 font-bold px-3 py-1 rounded-full shadow-sm text-sm ${getDiscountColor(promo.discountPercent)}`}>
                 {promo.discountPercent}% OFF
               </div>
             </div>
