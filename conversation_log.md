@@ -71,3 +71,24 @@ Overview of the build process, architectural decisions, and debugging history be
 - **Resolution**: Updated `src/components/CalendarHeatmap.tsx` to dynamically distinguish between promotions starting on the current day versus those that started previously.
 - **Improved UX**: Tooltips now accurately show "Started: [Date], [Time] PT" for ongoing deals, providing clear context within the calendar view.
 - **Git**: Successfully pushed the fix to the `main` branch.
+
+## TODO
+- [ ] **Deal Archiving**: Implement a system to archive past deals so they don't clutter the main interface.
+  - Archived deals should remain accessible in a dedicated "Archive" section.
+  - Archived deals must still be visible on the Calendar Heatmap for historical reference.
+- [ ] **Influencer Experience**:
+  - [ ] **Keyword Search**: Add a search bar to filter by product name.
+  - [ ] **"Expiring Soon" Highlights**: Add a dedicated section or visual badge for deals ending within 24 hours.
+  - [ ] **Image Optimization**: Replace standard `img` tags with Next.js `Image` components.
+  - [ ] **PWA Support**: Support progressive web app installation.
+  - [ ] **Personalized "Favorites"**: Let influencers save specific deals to a "Shortlist".
+- [ ] **Admin Efficiency**:
+  - [ ] **CSV/Excel Import**: Bulk upload promotions from an Amazon export spreadsheet.
+  - [ ] **Multi-Select Archive**: Allow archiving or deleting multiple promotions at once.
+  - [ ] **Direct Image Upload**: Integrate with Supabase Storage for easier image management. Both image link and direct image upload must be available.
+  - [ ] **Image Preview in List**: Add a small thumbnail to the admin promotion table.
+- [ ] **Communication & Engagement**:
+  - [ ] **Email Alerts**: Sync with Resend or SendGrid for weekly summaries to influencers.
+  - [ ] **Browser Notifications**: Optional "push" notifications for Lightning Deal starts.
+- [ ] **Developer Experience**:
+  - [ ] **Automated Testing Suite**: Add Playwright or Cypress tests for critical flows.

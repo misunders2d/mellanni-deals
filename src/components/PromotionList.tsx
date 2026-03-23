@@ -14,7 +14,19 @@ interface PromotionListProps {
 
 export default function PromotionList({ promotions, selectedDate, onClearDate }: PromotionListProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<PromoType | 'All'>('All');
+
+  const handleCopyCode = async (promo: Promotion) => {
+    if (!promo.promoCode) return;
+    try {
+      await navigator.clipboard.writeText(promo.promoCode);
+      setCopiedCodeId(promo.id);
+      setTimeout(() => setCopiedCodeId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy promo code', err);
+    }
+  };
 
   const handleCopy = async (promo: Promotion) => {
     try {
@@ -119,9 +131,18 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
               </h3>
               
               {promo.promoCode && (
-                <div className="mb-4 inline-flex items-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded px-3 py-1.5 w-max">
-                  <span className="text-xs text-slate-500 font-medium">CODE:</span>
+                <div 
+                  onClick={() => handleCopyCode(promo)}
+                  title="Click to copy code"
+                  className="mb-4 inline-flex items-center gap-2 bg-slate-50 border border-dashed border-slate-300 rounded px-3 py-1.5 w-max cursor-pointer hover:bg-slate-100 hover:border-slate-400 transition-all group/code relative"
+                >
+                  <span className="text-xs text-slate-500 font-medium whitespace-nowrap">CODE:</span>
                   <span className="text-sm font-bold text-primary">{promo.promoCode}</span>
+                  {copiedCodeId === promo.id && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-in fade-in zoom-in duration-200">
+                      Copied!
+                    </div>
+                  )}
                 </div>
               )}
               
