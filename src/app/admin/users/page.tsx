@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { ShieldAlert, Users } from 'lucide-react';
+import { ShieldAlert, Users, UserPlus, X } from 'lucide-react';
+import { createUserAction } from './user-actions';
 
 export default function UserManagementDashboard() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,6 +52,22 @@ export default function UserManagementDashboard() {
     setLoading(false);
   };
 
+  const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    const formData = new FormData(e.currentTarget);
+    
+    const result = await createUserAction(formData);
+    
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setShowCreateForm(false);
+      fetchProfiles();
+    }
+    setCreateLoading(false);
+  };
+
   const handleRoleChange = async (userId: string, newRole: string) => {
     const { error } = await supabase
       .from('profiles')
@@ -85,10 +104,66 @@ export default function UserManagementDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-foreground">Registered Users matrix</h2>
-          <span className="text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold shadow-sm border border-emerald-200">
-            Total Accessing: {profiles.length}
-          </span>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setShowCreateForm(true)}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-primary/90 transition-all"
+            >
+              <UserPlus size={18} /> Manually Create User
+            </button>
+            <span className="text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold shadow-sm border border-emerald-200">
+              Total Accessing: {profiles.length}
+            </span>
+          </div>
         </div>
+
+        {showCreateForm && (
+          <div className="mb-8 bg-white p-6 rounded-xl shadow-sm border-2 border-primary/20 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-primary">
+                <UserPlus size={20} /> Identity Provisioning
+              </h3>
+              <button onClick={() => setShowCreateForm(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Email Address</label>
+                <input required name="email" type="email" placeholder="influencer@example.com" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Set Password</label>
+                <input required name="password" type="password" placeholder="••••••••" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">First Name</label>
+                <input name="firstName" type="text" placeholder="Jane" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Last Name</label>
+                <input name="lastName" type="text" placeholder="Doe" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Assign Role</label>
+                <select name="role" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none bg-white">
+                  <option value="influencer">Influencer</option>
+                  <option value="superuser">Superuser</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="lg:col-span-1 flex items-end">
+                <button 
+                  disabled={createLoading}
+                  type="submit" 
+                  className="w-full bg-primary text-white font-bold py-2 rounded-lg hover:shadow-lg disabled:opacity-50 transition-all"
+                >
+                  {createLoading ? 'Provisioning...' : 'Authorize User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
           <div className="overflow-x-auto">
