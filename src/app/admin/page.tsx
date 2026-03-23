@@ -85,6 +85,14 @@ export default function AdminDashboard() {
   };
 
   const handleSave = async () => {
+    // Validate date range
+    if (formData.startDate && formData.endDate) {
+      if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+        alert("The End Date must be after the Start Date. Please adjust your date selection.");
+        return;
+      }
+    }
+
     try {
       const dbPayload = mapToDB({
         ...formData,
