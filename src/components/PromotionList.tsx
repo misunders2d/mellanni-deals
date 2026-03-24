@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Promotion, PromoType } from '@/types';
 import { format, parseISO, isBefore, addHours } from 'date-fns';
-import { Copy, Check, X, Search, Clock, Heart } from 'lucide-react';
+import { Copy, Check, X, Clock, Heart } from 'lucide-react';
 import { formatPT, hasTimePT } from '@/utils/date-utils';
 import Image from 'next/image';
 
@@ -24,8 +24,6 @@ export default function PromotionList({
 }: PromotionListProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<PromoType | 'All'>('All');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleCopyCode = async (promo: Promotion) => {
     if (!promo.promoCode) return;
@@ -61,18 +59,7 @@ export default function PromotionList({
     }
   };
 
-  const filteredPromos = useMemo(() => {
-    let result = activeFilter === 'All' 
-      ? promotions 
-      : promotions.filter(p => p.promoType === activeFilter);
-    
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(p => p.productName.toLowerCase().includes(query));
-    }
-    
-    return result;
-  }, [promotions, activeFilter, searchQuery]);
+  const filteredPromos = promotions;
 
   const isExpiringSoon = (endDate: string) => {
     const end = parseISO(endDate);
@@ -87,53 +74,21 @@ export default function PromotionList({
     return 'bg-discount-50-plus text-white';
   };
 
-  const filters: (PromoType | 'All')[] = ['All', 'Lightning Deal', 'Best Deal', 'Promo Code', 'Prime Exclusive', 'Sale'];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-serif text-primary">
-            {selectedDate ? `Promos for ${format(selectedDate, 'MMM d, yyyy')}` : 'Active & Upcoming Promos'}
-          </h2>
-          {selectedDate && (
-            <button 
-              onClick={onClearDate}
-              className="flex items-center gap-1 text-sm bg-slate-100 px-3 py-1 rounded-full text-slate-600 hover:bg-slate-200 transition-colors"
-            >
-              <X size={14} /> Clear date
-            </button>
-          )}
-        </div>
-        
-        <div className="flex flex-col sm:flex-row bg-white rounded-xl border border-border p-1 shadow-sm overflow-hidden w-full sm:w-auto gap-1">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-transparent border-none focus:ring-0 outline-none"
-            />
-          </div>
-          <div className="h-px sm:h-auto sm:w-px bg-border mx-1 my-1 sm:my-2" />
-          <div className="flex overflow-x-auto no-scrollbar">
-            {filters.map(f => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeFilter === f 
-                    ? 'bg-primary text-primary-foreground shadow-sm' 
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center gap-4">
+        <h2 className="text-2xl font-serif text-primary">
+          {selectedDate ? `Promos for ${format(selectedDate, 'MMM d, yyyy')}` : 'Active & Upcoming Promos'}
+        </h2>
+        {selectedDate && (
+          <button 
+            onClick={onClearDate}
+            className="flex items-center gap-1 text-sm bg-slate-100 px-3 py-1 rounded-full text-slate-600 hover:bg-slate-200 transition-colors"
+          >
+            <X size={14} /> Clear date
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,8 +199,8 @@ export default function PromotionList({
         <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-border flex flex-col items-center justify-center">
           <p className="text-muted-foreground font-medium mb-4">
             {selectedDate 
-              ? `No "${activeFilter}" promotions running on ${format(selectedDate, 'MMMM d, yyyy')}.`
-              : `No promotions found for "${activeFilter}".`}
+              ? `No promotions running on ${format(selectedDate, 'MMMM d, yyyy')} for the selected criteria.`
+              : `No promotions found for the selected criteria.`}
           </p>
           {selectedDate && (
             <button 
