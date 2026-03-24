@@ -92,6 +92,7 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
             const colorClass = getHeatmapColor(dayPromos);
             const isCurrentMonth = isSameMonth(day, monthStart);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const isArchivedDay = dayPromos.length > 0 && dayPromos.every(p => p.isArchived);
 
             return (
               <button 
@@ -104,6 +105,7 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
                   ${colorClass === 'bg-transparent' ? 'border-transparent text-foreground hover:bg-slate-50' : colorClass + ' hover:brightness-110'}
                   ${isToday(day) && !isSelected ? 'ring-2 ring-primary/50 ring-offset-2' : ''}
                   ${isSelected ? 'ring-4 ring-primary ring-offset-2 scale-105 z-10 shadow-lg font-bold' : ''}
+                  ${isArchivedDay ? 'archived-pattern' : ''}
                 `}
               >
                 <span className="text-sm md:text-base">{format(day, 'd')}</span>
@@ -163,12 +165,13 @@ export default function CalendarHeatmap({ promotions, selectedDate, onDateSelect
         </div>
       </div>
       
-      <div className="px-6 py-4 bg-slate-50/50 border-t border-border flex items-center justify-center gap-4 text-xs text-muted-foreground">
+      <div className="px-6 py-4 bg-slate-50/50 border-t border-border flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-transparent border border-border"></div>None</span>
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-15 border border-discount-30"></div>~15% OFF</span>
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-30 border border-discount-50"></div>~30% OFF</span>
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-50 border border-discount-50-plus"></div>~50% OFF</span>
         <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-discount-50-plus border border-discount-50-plus"></div>50%+ OFF</span>
+        <span className="flex items-center gap-1 border-l border-border pl-4 ml-2"><div className="w-3 h-3 rounded-sm bg-slate-200 border border-border archived-pattern"></div>Archived</span>
       </div>
     </div>
   );
