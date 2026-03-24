@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Promotion, PromoType } from '@/types';
-import { Plus, Edit2, Trash2, X, Save, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, ExternalLink, Archive, CheckSquare, Square, MoreHorizontal, Download, Upload, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { createClient } from '@/utils/supabase/client';
 import { formatPT, hasTimePT, toPTISO } from '@/utils/date-utils';
+import Papa from 'papaparse';
 
 export default function AdminDashboard() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -13,6 +14,9 @@ export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
   const [formData, setFormData] = useState<Partial<Promotion>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isArchivedView, setIsArchivedView] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   
   const supabase = createClient();
 
@@ -23,7 +27,11 @@ export default function AdminDashboard() {
   const fetchPromotions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('promotions').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('is_archived', isArchivedView)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       
       const mappedPromos: Promotion[] = (data || []).map((p: any) => ({
@@ -37,6 +45,7 @@ export default function AdminDashboard() {
         promoType: p.promo_type,
         imageUrl: p.image_url,
         isActive: p.is_active,
+        isArchived: p.is_archived,
       }));
       
       setPromotions(mappedPromos);
@@ -57,6 +66,7 @@ export default function AdminDashboard() {
     promo_type: p.promoType,
     image_url: p.imageUrl,
     is_active: p.isActive,
+    is_archived: p.isArchived || false,
   });
 
   const handleOpenModal = (promo?: Promotion) => {
@@ -79,6 +89,7 @@ export default function AdminDashboard() {
         startDate: formatPT(new Date(), "yyyy-MM-dd'T'HH:mm"),
         endDate: formatPT(new Date(Date.now() + 86400000 * 7), "yyyy-MM-dd'T'HH:mm"),
         isActive: true,
+        isArchived: false,
       });
     }
     setIsModalOpen(true);
@@ -116,16 +127,177 @@ export default function AdminDashboard() {
     }
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('promotions')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('promotions')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, imageUrl: publicUrl });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this promotion?')) {
       try {
-        await supabase.from('promotions').delete().eq('id', id);
+        const { error } = await supabase.from('promotions').delete().eq('id', id);
+        if (error) throw error;
         await fetchPromotions();
       } catch (error) {
         console.error("Failed to delete", error);
       }
     }
   };
+
+  const handleArchive = async (id: string, archive: boolean = true) => {
+    try {
+      const { error } = await supabase.from('promotions').update({ is_archived: archive }).eq('id', id);
+      if (error) throw error;
+      await fetchPromotions();
+    } catch (error) {
+      console.error("Failed to archive", error);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === promotions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(promotions.map(p => p.id)));
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    if (selectedIds.size === 0) return;
+    const action = isArchivedView ? 'unarchive' : 'archive';
+    if (!window.confirm(`Are you sure you want to ${action} ${selectedIds.size} promotions?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .update({ is_archived: !isArchivedView })
+        .in('id', Array.from(selectedIds));
+      
+      if (error) throw error;
+      setSelectedIds(new Set());
+      await fetchPromotions();
+    } catch (error) {
+      console.error("Failed bulk archive", error);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      'id', 'productName', 'amazonLink', 'promoCode', 'discountPercent', 
+      'startDate', 'endDate', 'promoType', 'imageUrl', 'isActive', 'isArchived'
+    ];
+    
+    // Include existing promotions in the template for editing
+    const rows = promotions.map(p => [
+      p.id, p.productName, p.amazonLink, p.promoCode || '', p.discountPercent,
+      formatPT(p.startDate, "yyyy-MM-dd'T'HH:mm"),
+      formatPT(p.endDate, "yyyy-MM-dd'T'HH:mm"),
+      p.promoType, p.imageUrl, p.isActive, p.isArchived || false
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'mellanni_promotions_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const rows = results.data as any[];
+          const updates = [];
+          const inserts = [];
+
+          for (const row of rows) {
+            const payload = {
+              product_name: row.productName,
+              amazon_link: row.amazonLink,
+              promo_code: row.promoCode || null,
+              discount_percent: parseInt(row.discountPercent) || 0,
+              start_date: toPTISO(row.startDate),
+              end_date: toPTISO(row.endDate),
+              promo_type: row.promoType || 'Promo Code',
+              image_url: row.imageUrl,
+              is_active: String(row.isActive).toLowerCase() === 'true',
+              is_archived: String(row.isArchived).toLowerCase() === 'true',
+            };
+
+            if (row.id && row.id.length > 10) { // Basic ID check
+              updates.push({ id: row.id, ...payload });
+            } else {
+              inserts.push(payload);
+            }
+          }
+
+          if (inserts.length > 0) {
+            const { error } = await supabase.from('promotions').insert(inserts);
+            if (error) throw error;
+          }
+
+          if (updates.length > 0) {
+            const { error } = await supabase.from('promotions').upsert(updates);
+            if (error) throw error;
+          }
+
+          alert(`Successfully processed ${rows.length} promotions (${inserts.length} new, ${updates.length} updated).`);
+          await fetchPromotions();
+        } catch (error: any) {
+          console.error("CSV Import failed", error);
+          alert(`Import Error: ${error.message}`);
+        } finally {
+          setIsImporting(false);
+          e.target.value = '';
+        }
+      }
+    });
+  };
+
+  useEffect(() => {
+    fetchPromotions();
+  }, [isArchivedView]);
 
   return (
     <div className="bg-slate-50 flex-1">
@@ -143,13 +315,50 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-foreground">Manage Promotions</h2>
-          <button 
-            onClick={() => handleOpenModal()} 
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm font-medium"
-          >
-            <Plus size={18} /> Add Promotion
-          </button>
+          <div className="flex items-center gap-6">
+            <h2 className="text-2xl font-bold text-foreground">Manage Promotions</h2>
+            <div className="flex bg-slate-100 p-1 rounded-lg border border-border">
+              <button 
+                onClick={() => setIsArchivedView(false)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${!isArchivedView ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Active
+              </button>
+              <button 
+                onClick={() => setIsArchivedView(true)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${isArchivedView ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Archived
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 bg-white border border-border text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm font-medium"
+            >
+              <Download size={18} /> Template
+            </button>
+            <label className="flex items-center gap-2 bg-white border border-border text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm font-medium cursor-pointer">
+              {isImporting ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+              Import CSV
+              <input type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} disabled={isImporting} />
+            </label>
+            {selectedIds.size > 0 && (
+              <button 
+                onClick={handleBulkArchive}
+                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm font-medium"
+              >
+                <Archive size={18} /> {isArchivedView ? 'Unarchive' : 'Archive'} ({selectedIds.size})
+              </button>
+            )}
+            <button 
+              onClick={() => handleOpenModal()} 
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm font-medium"
+            >
+              <Plus size={18} /> Add Promotion
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
@@ -157,6 +366,11 @@ export default function AdminDashboard() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 border-b border-border text-slate-500 font-medium">
                 <tr>
+                  <th className="px-6 py-4 w-10">
+                    <button onClick={toggleSelectAll} className="text-slate-400 hover:text-primary transition-colors">
+                      {selectedIds.size === promotions.length && promotions.length > 0 ? <CheckSquare size={18} /> : <Square size={18} />}
+                    </button>
+                  </th>
                   <th className="px-6 py-4">Product / Campaign</th>
                   <th className="px-6 py-4">Type</th>
                   <th className="px-6 py-4">Discount</th>
@@ -173,10 +387,26 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 ) : promotions.map(promo => (
-                  <tr key={promo.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={promo.id} className={`hover:bg-slate-50/50 transition-colors ${selectedIds.has(promo.id) ? 'bg-primary/5' : ''}`}>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-primary">{promo.productName}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">{promo.amazonLink}</div>
+                      <button onClick={() => toggleSelect(promo.id)} className={`${selectedIds.has(promo.id) ? 'text-primary' : 'text-slate-300 hover:text-slate-400'} transition-colors`}>
+                        {selectedIds.has(promo.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-md bg-slate-100 border border-border flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          {promo.imageUrl ? (
+                            <img src={promo.imageUrl} alt="" className="w-full h-full object-cover mix-blend-multiply" />
+                          ) : (
+                            <div className="text-[10px] font-serif italic text-slate-400">Mel</div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-primary truncate max-w-[200px]">{promo.productName}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">{promo.amazonLink}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-medium">
@@ -200,12 +430,17 @@ export default function AdminDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => handleOpenModal(promo)} className="p-2 text-slate-400 hover:text-primary transition-colors">
-                        <Edit2 size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(promo.id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors ml-1">
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => handleArchive(promo.id, !isArchivedView)} title={isArchivedView ? 'Unarchive' : 'Archive'} className="p-2 text-slate-400 hover:text-primary transition-colors">
+                          <Archive size={16} />
+                        </button>
+                        <button onClick={() => handleOpenModal(promo)} className="p-2 text-slate-400 hover:text-primary transition-colors">
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(promo.id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -314,17 +549,37 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-sm font-semibold text-foreground">Image URL (Optional)</label>
-                  <input 
-                    type="url" 
-                    value={formData.imageUrl || ''}
-                    onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                    placeholder="https://images.unsplash.com/photo-..."
-                  />
+                  <label className="text-sm font-semibold text-foreground">Product Image</label>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <input 
+                        type="url" 
+                        value={formData.imageUrl || ''}
+                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                        className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                        placeholder="Or paste an image URL (Unsplash, Amazon...)"
+                      />
+                      <label className={`cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-100 border border-border rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
+                      </label>
+                    </div>
+                    {formData.imageUrl && (
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-slate-50 flex items-center justify-center">
+                        <img src={formData.imageUrl} alt="Preview" className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                        <button 
+                          onClick={() => setFormData({...formData, imageUrl: ''})}
+                          className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-full text-red-500 hover:bg-white shadow-sm transition-all"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="md:col-span-2 mt-2">
+                <div className="md:col-span-2 flex flex-col gap-3 mt-2">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -333,6 +588,15 @@ export default function AdminDashboard() {
                       className="w-5 h-5 rounded text-primary focus:ring-primary border-border"
                     />
                     <span className="font-semibold text-foreground">Visible to Influencers (Active)</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.isArchived || false}
+                      onChange={e => setFormData({...formData, isArchived: e.target.checked})}
+                      className="w-5 h-5 rounded text-primary focus:ring-primary border-border"
+                    />
+                    <span className="font-semibold text-foreground">Archived (Hide from main list)</span>
                   </label>
                 </div>
               </div>

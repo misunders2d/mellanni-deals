@@ -11,4 +11,5 @@ export interface Promotion {
   promoType: PromoType;
   imageUrl: string;
   isActive: boolean;
+  isArchived?: boolean;
 }

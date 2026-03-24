@@ -17,6 +17,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Mellanni | Influencer Promotions",
   description: "View upcoming and active promotions for Mellanni products.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

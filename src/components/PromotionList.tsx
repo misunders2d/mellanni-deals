@@ -1,21 +1,31 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Promotion, PromoType } from '@/types';
-import { format, parseISO } from 'date-fns';
-import { Copy, Check, X } from 'lucide-react';
+import { format, parseISO, isBefore, addHours } from 'date-fns';
+import { Copy, Check, X, Search, Clock, Heart } from 'lucide-react';
 import { formatPT, hasTimePT } from '@/utils/date-utils';
+import Image from 'next/image';
 
 interface PromotionListProps {
   promotions: Promotion[];
   selectedDate?: Date | null;
   onClearDate?: () => void;
+  favoriteIds?: Set<string>;
+  onToggleFavorite?: (id: string) => void;
 }
 
-export default function PromotionList({ promotions, selectedDate, onClearDate }: PromotionListProps) {
+export default function PromotionList({ 
+  promotions, 
+  selectedDate, 
+  onClearDate, 
+  favoriteIds = new Set(), 
+  onToggleFavorite 
+}: PromotionListProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<PromoType | 'All'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleCopyCode = async (promo: Promotion) => {
     if (!promo.promoCode) return;
@@ -51,9 +61,24 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
     }
   };
 
-  const filteredPromos = activeFilter === 'All' 
-    ? promotions 
-    : promotions.filter(p => p.promoType === activeFilter);
+  const filteredPromos = useMemo(() => {
+    let result = activeFilter === 'All' 
+      ? promotions 
+      : promotions.filter(p => p.promoType === activeFilter);
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(p => p.productName.toLowerCase().includes(query));
+    }
+    
+    return result;
+  }, [promotions, activeFilter, searchQuery]);
+
+  const isExpiringSoon = (endDate: string) => {
+    const end = parseISO(endDate);
+    const now = new Date();
+    return isBefore(now, end) && isBefore(end, addHours(now, 24));
+  };
 
   const getDiscountColor = (percent: number) => {
     if (percent <= 15) return 'bg-discount-15 text-primary border border-discount-30';
@@ -81,20 +106,33 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
           )}
         </div>
         
-        <div className="flex bg-white rounded-lg border border-border p-1 shadow-sm overflow-x-auto w-full sm:w-auto">
-          {filters.map(f => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeFilter === f 
-                  ? 'bg-primary text-primary-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row bg-white rounded-xl border border-border p-1 shadow-sm overflow-hidden w-full sm:w-auto gap-1">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm bg-transparent border-none focus:ring-0 outline-none"
+            />
+          </div>
+          <div className="h-px sm:h-auto sm:w-px bg-border mx-1 my-1 sm:my-2" />
+          <div className="flex overflow-x-auto no-scrollbar">
+            {filters.map(f => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeFilter === f 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -103,19 +141,43 @@ export default function PromotionList({ promotions, selectedDate, onClearDate }:
           <div key={promo.id} className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group">
             <div className="aspect-[4/3] w-full bg-slate-100 flex items-center justify-center p-6 relative overflow-hidden">
               {promo.imageUrl ? (
-                <img 
-                  src={promo.imageUrl} 
-                  alt={promo.productName} 
-                  className="object-cover w-full h-full mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-500" 
-                />
+                <div className="relative w-full h-full mix-blend-multiply opacity-80 group-hover:scale-105 transition-transform duration-500">
+                  <Image 
+                    src={promo.imageUrl} 
+                    alt={promo.productName} 
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
               ) : (
                 <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 font-serif italic">
                   Mellanni
                 </div>
               )}
-              <div className={`absolute top-4 right-4 font-bold px-3 py-1 rounded-full shadow-sm text-sm ${getDiscountColor(promo.discountPercent)}`}>
-                {promo.discountPercent}% OFF
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <div className={`font-bold px-3 py-1 rounded-full shadow-sm text-sm w-fit ${getDiscountColor(promo.discountPercent)}`}>
+                  {promo.discountPercent}% OFF
+                </div>
+                {isExpiringSoon(promo.endDate) && (
+                  <div className="bg-red-600 text-white font-bold px-3 py-1 rounded-full shadow-sm text-xs flex items-center gap-1 animate-pulse">
+                    <Clock size={12} /> ENDS SOON
+                  </div>
+                )}
               </div>
+              
+              {onToggleFavorite && (
+                <button
+                  onClick={() => onToggleFavorite(promo.id)}
+                  className={`absolute top-4 right-4 p-2 rounded-full shadow-md transition-all ${
+                    favoriteIds.has(promo.id)
+                      ? 'bg-red-50 text-red-500'
+                      : 'bg-white/80 text-slate-400 hover:text-red-400 backdrop-blur-sm'
+                  }`}
+                >
+                  <Heart size={20} fill={favoriteIds.has(promo.id) ? 'currentColor' : 'none'} />
+                </button>
+              )}
             </div>
 
             <div className="p-6 flex flex-col flex-1">

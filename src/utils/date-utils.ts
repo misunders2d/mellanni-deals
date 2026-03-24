@@ -48,31 +48,39 @@ export function hasTimePT(date: Date | string): boolean {
 }
 
 /**
- * Prepares a datetime-local string to be saved as a Pacific Time timestamp.
+ * Prepares a datetime string to be saved as a Pacific Time timestamp.
+ * Handles both datetime-local (YYYY-MM-DDTHH:mm) and ISO strings.
  */
-export function toPTISO(datetimeLocal: string): string {
-  const [date, time] = datetimeLocal.split('T');
-  // We append the PT offset. This is approximate but works for most cases
-  // Better: use Intl to get current PT offset
-  const d = new Date(datetimeLocal);
+export function toPTISO(val: string): string {
+  if (!val) return val;
+  
+  // If it's already an ISO string with Z or an offset, just return it
+  if (val.includes('Z') || (val.includes('+') && val.lastIndexOf('+') > 10) || (val.includes('-') && val.lastIndexOf('-') > 10)) {
+    return val;
+  }
+
+  const [date, time] = val.split('T');
+  if (!date || !time) return val;
+
+  // Clean time (remove seconds if they existed and we are adding them)
+  const cleanTime = time.split(':')[0] + ':' + time.split(':')[1];
+  
+  const d = new Date(val);
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles',
     timeZoneName: 'shortOffset'
   }).formatToParts(d);
   
-  const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value; // e.g. "GMT-7"
-  let offset = '-08:00'; // Default PST
-  if (offsetPart?.includes('-7') || offsetPart?.includes('−7')) offset = '-07:00';
-  if (offsetPart?.includes('-8') || offsetPart?.includes('−8')) offset = '-08:00';
+  const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value;
+  let offset = '-08:00';
   
-  // Note: Intl might return "GMT-07:00" or similar
-  const match = offsetPart?.match(/[+-]\d{1,2}(:\d{2})?/);
+  const match = offsetPart?.match(/[+-]\d{1,2}(?::\d{2})?/);
   if (match) {
     let raw = match[0];
     if (!raw.includes(':')) raw += ':00';
-    if (raw.length === 5) raw = raw[0] + '0' + raw.slice(1); // +7:00 -> +07:00
+    if (raw.length === 5) raw = raw[0] + '0' + raw.slice(1);
     offset = raw;
   }
 
-  return `${date}T${time}:00${offset}`;
+  return `${date}T${cleanTime}:00${offset}`;
 }

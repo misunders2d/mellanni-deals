@@ -9,7 +9,7 @@ export default async function Home() {
   const { data } = await supabase
     .from('promotions')
     .select('*')
-    .eq('is_active', true);
+    .or('is_active.eq.true,is_archived.eq.true');
 
   const promotions: Promotion[] = (data || []).map((p: any) => ({
     id: p.id,
@@ -22,6 +22,7 @@ export default async function Home() {
     promoType: p.promo_type,
     imageUrl: p.image_url,
     isActive: p.is_active,
+    isArchived: p.is_archived,
   }));
 
   return (
